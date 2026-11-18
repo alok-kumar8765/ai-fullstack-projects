@@ -1,0 +1,4 @@
+opencv-python 
+mediapipe 
+pyautogui
+# pip install mediapipe==0.10.14

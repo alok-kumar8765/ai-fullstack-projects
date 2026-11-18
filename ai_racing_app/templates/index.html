@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Racing Simulation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0; background: #0a1128; color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .container {
+            width: 900px; margin-top: 20px; border: 2px solid #00a8ff;
+            border-radius: 12px; overflow: hidden; background: #101d42;
+            box-shadow: 0 0 25px rgba(0, 168, 255, 0.4);
+        }
+        #canvas-container {
+            position: relative; width: 100%; height: 420px; background: #1e272e;
+        }
+        .hud-top {
+            position: absolute; top: 15px; left: 20px; right: 20px;
+            display: flex; justify-content: space-between; pointer-events: none;
+        }
+        .badge {
+            background: rgba(16, 29, 66, 0.85); border: 1px solid #00a8ff;
+            padding: 8px 18px; border-radius: 8px; font-weight: bold; font-size: 18px;
+        }
+        .speedometer {
+            position: absolute; bottom: 20px; right: 20px;
+            width: 110px; height: 110px; border-radius: 50%;
+            background: rgba(0, 0, 0, 0.8); border: 4px solid #fbc531;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .speed-val { font-size: 28px; font-weight: bold; color: #fff; }
+        .speed-unit { font-size: 11px; color: #fbc531; }
+        .dashboard {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px;
+        }
+        .panel {
+            background: #162654; border: 1px solid #273c75;
+            border-radius: 10px; padding: 15px;
+        }
+        .panel h3 { margin: 0 0 15px 0; font-size: 16px; color: #00a8ff; }
+        .controls-grid { display: flex; justify-content: space-between; align-items: center; }
+        .dpad { display: grid; grid-template-columns: repeat(3, 45px); gap: 5px; }
+        button {
+            background: #192a56; color: white; border: 1px solid #00a8ff;
+            border-radius: 6px; padding: 10px; cursor: pointer; font-weight: bold;
+        }
+        button:hover, button:active { background: #00a8ff; color: #0a1128; }
+        .ai-btn { background: #e84118; border-color: #c23616; width: 100%; margin-top: 10px; }
+        .ai-btn.active { background: #4cd137; border-color: #44bd32; }
+        .action-btns { display: flex; flex-direction: column; gap: 8px; width: 140px; }
+        .track-info-content { display: flex; align-items: center; justify-content: space-between; }
+        #minimap { background: #0a1128; border-radius: 8px; border: 1px solid #273c75; }
+        .status-bar {
+            background: #0c1838; padding: 12px 20px; border-top: 1px solid #273c75;
+            color: #4cd137; font-weight: bold; display: flex; align-items: center; gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="canvas-container">
+        <div class="hud-top">
+            <div class="badge">Lap: <span id="lap">1 / 3</span></div>
+            <div class="badge">Mode: <span id="mode-indicator" style="color: #fbc531;">Manual</span></div>
+        </div>
+        <div class="speedometer">
+            <span class="speed-unit">KM/H</span>
+            <span class="speed-val" id="speed">0</span>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="panel">
+            <h3>🎮 Racing Controls</h3>
+            <div class="controls-grid">
+                <div class="dpad">
+                    <div></div><button onmousedown="keys.up=true" onmouseup="keys.up=false">▲</button><div></div>
+                    <button onmousedown="keys.left=true" onmouseup="keys.left=false">◄</button>
+                    <button onmousedown="keys.down=true" onmouseup="keys.down=false">▼</button>
+                    <button onmousedown="keys.right=true" onmouseup="keys.right=false">►</button>
+                </div>
+                <div class="action-btns">
+                    <button onmousedown="keys.up=true" onmouseup="keys.up=false">Accelerate</button>
+                    <button onmousedown="keys.down=true" onmouseup="keys.down=false">Brake</button>
+                    <button onclick="generateNewTrack()">New Track</button>
+                </div>
+            </div>
+            <button id="ai-toggle-btn" class="ai-btn" onclick="toggleAI()">🤖 Enable AI Auto-Drive</button>
+        </div>
+
+        <div class="panel">
+            <h3>📊 Track Info</h3>
+            <div class="track-info-content">
+                <canvas id="minimap" width="140" height="90"></canvas>
+                <div style="font-size: 14px; line-height: 1.8;">
+                    <div><strong>Track Type:</strong> AI Generated</div>
+                    <div><strong>Length:</strong> <span id="track-len">4.7 km</span></div>
+                    <div><strong>Difficulty:</strong> <span id="track-diff">Medium</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span>✅</span> <span id="status-msg">AI Racing Track Generated Successfully!</span>
+    </div>
+</div>
+
+<script>
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB);
+
+    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(50, 100, 50);
+    scene.add(dirLight);
+
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), new THREE.MeshLambertMaterial({ color: 0x2ecc71 }));
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    // Car setup
+    const carGroup = new THREE.Group();
+    const carBody = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 4.5), new THREE.MeshPhongMaterial({ color: 0xe84118 }));
+    carBody.position.y = 0.6;
+    carGroup.add(carBody);
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.6, 2.2), new THREE.MeshPhongMaterial({ color: 0x1e272e }));
+    cabin.position.set(0, 1.2, -0.3);
+    carGroup.add(cabin);
+    scene.add(carGroup);
+
+    let trackMesh = null;
+    let trackWaypoints = [];
+    let isAIActive = false;
+    let aiAction = 1; // 1 = Straight
+
+    const keys = { up: false, down: false, left: false, right: false };
+    window.addEventListener('keydown', e => {
+        if (!isAIActive) {
+            if (e.key === 'ArrowUp' || e.key === 'w') keys.up = true;
+            if (e.key === 'ArrowDown' || e.key === 's') keys.down = true;
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+        }
+    });
+    window.addEventListener('keyup', e => {
+        if (!isAIActive) {
+            if (e.key === 'ArrowUp' || e.key === 'w') keys.up = false;
+            if (e.key === 'ArrowDown' || e.key === 's') keys.down = false;
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+        }
+    });
+
+    let speed = 0;
+    let carAngle = 0;
+
+    async function generateNewTrack() {
+        const seed = Math.floor(Math.random() * 10000);
+        const res = await fetch('/generate_track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ seed })
+        });
+        const data = await res.json();
+        trackWaypoints = data.waypoints;
+
+        document.getElementById('track-len').innerText = data.length;
+        document.getElementById('track-diff').innerText = data.difficulty;
+
+        build3DTrack(trackWaypoints);
+        drawMinimap(trackWaypoints);
+    }
+
+    function build3DTrack(waypoints) {
+        if (trackMesh) scene.remove(trackMesh);
+        const points = waypoints.map(p => new THREE.Vector3(p.x, 0.05, p.z));
+        const curve = new THREE.CatmullRomCurve3(points, true);
+        const tubeGeo = new THREE.TubeGeometry(curve, 100, 5, 8, true);
+        tubeGeo.scale(1, 0.02, 1);
+        trackMesh = new THREE.Mesh(tubeGeo, new THREE.MeshLambertMaterial({ color: 0x353b48 }));
+        scene.add(trackMesh);
+
+        carGroup.position.set(waypoints[0].x, 0, waypoints[0].z);
+        carAngle = 0;
+        speed = 0;
+    }
+
+    function drawMinimap(waypoints) {
+        const canvas = document.getElementById('minimap');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#dcdde1';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        waypoints.forEach((p, idx) => {
+            const mx = (p.x + 90) * (canvas.width / 180);
+            const mz = (p.z + 90) * (canvas.height / 180);
+            if (idx === 0) ctx.moveTo(mx, mz);
+            else ctx.lineTo(mx, mz);
+        });
+        ctx.closePath();
+        ctx.stroke();
+    }
+
+    async function toggleAI() {
+        isAIActive = !isAIActive;
+        const btn = document.getElementById('ai-toggle-btn');
+        const indicator = document.getElementById('mode-indicator');
+        if (isAIActive) {
+            btn.innerText = "🛑 Disable AI Auto-Drive";
+            btn.classList.add('active');
+            indicator.innerText = "TensorFlow AI Active";
+            indicator.style.color = "#4cd137";
+            pollAI();
+        } else {
+            btn.innerText = "🤖 Enable AI Auto-Drive";
+            btn.classList.remove('active');
+            indicator.innerText = "Manual";
+            indicator.style.color = "#fbc531";
+        }
+    }
+
+    async function pollAI() {
+        if (!isAIActive) return;
+        try {
+            const res = await fetch('/predict_move', { method: 'POST' });
+            const data = await res.json();
+            aiAction = data.action; // 0: Left, 1: Straight, 2: Right
+        } catch (e) { console.error(e); }
+        setTimeout(pollAI, 300); // Poll Python model every 300ms
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        if (isAIActive) {
+            speed = 1.0; // Auto-accelerate in AI mode
+            if (aiAction === 0) carAngle += 0.035;  // Steer Left
+            if (aiAction === 2) carAngle -= 0.035;  // Steer Right
+        } else {
+            if (keys.up) speed = Math.min(speed + 0.02, 1.5);
+            else if (keys.down) speed = Math.max(speed - 0.04, -0.5);
+            else speed *= 0.98;
+
+            if (Math.abs(speed) > 0.05) {
+                if (keys.left) carAngle += 0.03;
+                if (keys.right) carAngle -= 0.03;
+            }
+        }
+
+        carGroup.rotation.y = carAngle;
+        carGroup.position.x -= Math.sin(carAngle) * speed;
+        carGroup.position.z -= Math.cos(carAngle) * speed;
+
+        document.getElementById('speed').innerText = Math.abs(Math.round(speed * 130));
+
+        camera.position.x = carGroup.position.x + Math.sin(carAngle) * 10;
+        camera.position.z = carGroup.position.z + Math.cos(carAngle) * 10;
+        camera.position.y = carGroup.position.y + 4.5;
+        camera.lookAt(carGroup.position);
+
+        renderer.render(scene, camera);
+    }
+
+    generateNewTrack();
+    animate();
+</script>
+</body>
+</html>
