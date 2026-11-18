@@ -1,0 +1,27 @@
+{
+  "camera": {
+    "camera_index": 0,
+    "inference_interval_sec": 0.8,
+    "target_fps": 30
+  },
+  "emotion": {
+    "confidence_threshold": 0.65,
+    "debounce_duration_sec": 4.0,
+    "rolling_window_size": 10,
+    "default_mode": "mood_matching"
+  },
+  "audio": {
+    "volume": 0.7,
+    "fade_ms": 1000,
+    "music_directory": "music"
+  },
+  "privacy": {
+    "save_snapshots": false,
+    "local_logging_only": true
+  },
+  "spotify": {
+    "client_id": "",
+    "client_secret": "",
+    "redirect_uri": "http://localhost:8888/callback"
+  }
+}
