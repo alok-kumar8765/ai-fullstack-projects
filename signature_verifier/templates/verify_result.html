@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verification Result</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5" style="max-width: 600px;">
+        <div class="card shadow-sm p-4 text-center">
+            <h2 class="mb-4">Verification Result</h2>
+            
+            <h4 class="text-muted mb-3">User: {{ user.name }}</h4>
+
+            {% if is_genuine %}
+                <div class="alert alert-success py-4">
+                    <h3 class="alert-heading mb-0">✅ GENUINE SIGNATURE</h3>
+                </div>
+            {% else %}
+                <div class="alert alert-danger py-4">
+                    <h3 class="alert-heading mb-0">❌ FORGED / MISMATCHED SIGNATURE</h3>
+                </div>
+            {% endif %}
+
+            <p class="fs-5 mt-2">Similarity Score: <strong>{{ score }}%</strong></p>
+
+            <div class="mt-4">
+                <a href="/verify" class="btn btn-primary">Verify Another</a>
+                <a href="/" class="btn btn-secondary">Home Dashboard</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

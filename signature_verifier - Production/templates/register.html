@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register User - Multi-Sample Enrollment</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fa-solid fa-signature me-2"></i>AI Signature Guard</a>
+            <a class="nav-link text-white" href="/"><i class="fa-solid fa-arrow-left me-1"></i> Back to Home</a>
+        </div>
+    </nav>
+
+    <div class="container py-5" style="max-width: 650px;">
+        <!-- Flash Messages -->
+        with messages = get_flashed_messages(with_categories=true)
+        if messages:
+            for category, message in messages:
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            endfor
+        endif
+        endwith
+
+        <div class="card shadow border-0">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="fa-solid fa-user-pen fa-xl"></i>
+                    </div>
+                    <h2 class="fw-bold">Multi-Sample Enrollment</h2>
+                    <p class="text-muted">Register a new profile by uploading multiple signature variations for enhanced AI matching precision.</p>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Full Name</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g., Jane Doe" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email Address</label>
+                        <input type="email" name="email" class="form-control" placeholder="jane@example.com" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Upload Signature Reference Samples</label>
+                        <!-- Notice the "multiple" attribute allowing batch sample files -->
+                        <input type="file" name="signatures" class="form-control" multiple accept="image/*" required>
+                        <div class="form-text text-muted mt-2">
+                            <i class="fa-solid fa-circle-info text-primary"></i> Hold down <code>Ctrl</code> (Windows) or <code>Command</code> (Mac) to select <strong>3 to 5 clear signature variations</strong> at once.
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                            <i class="fa-solid fa-cloud-arrow-up me-2"></i> Save Profile & Signatures
+                        </button>
+                        <a href="/" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
